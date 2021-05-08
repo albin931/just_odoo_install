@@ -7,11 +7,11 @@
 # in one Ubuntu because of the different xmlrpc_ports
 #-------------------------------------------------------------------------------
 # Make a new file:
-# sudo nano odoo-install.sh
+# sudo nano just_odoo_install.sh
 # Place this content in it and then make the file executable:
-# sudo chmod +x odoo-install.sh
+# sudo chmod +x just_odoo_install.sh
 # Execute the script to install Odoo:
-# ./odoo-install
+# ./just_odoo_install
 ################################################################################
 OE_USER="odoo11"
 OE_HOME="Odoo/$OE_USER"
@@ -24,7 +24,9 @@ OE_PORT="1169"
 # Choose the Odoo version which you want to install. For example: 13.0, 12.0, 11.0 or saas-18. When using 'master' the master version will be installed.
 # IMPORTANT! This script contains extra libraries that are specifically needed for Odoo 13.0
 OE_VERSION="11.0"
-
+# set the superadmin password
+OE_SUPERADMIN="admin"
+OE_CONFIG="${OE_USER}-server"
 
 ##
 ###  WKHTMLTOPDF download links
@@ -92,6 +94,8 @@ sudo adduser --system --quiet --shell=/bin/bash --home=$(pwd)/$OE_HOME --gecos '
 #The user should also be added to the sudo'ers group.
 sudo adduser $OE_USER sudo
 
+sudo chown -R $USER:$USER $OE_HOME
+
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
 sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
@@ -102,7 +106,21 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 echo -e "\n==== Installing ODOO Server ===="
 git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 
+echo -e "\n---- Install python packages/requirements ----"
+sudo pip3 install -r $OE_HOME_EXT/requirements.txt
+
 echo -e "\n---- Create projects module directory ----"
 mkdir $OE_HOME/projects
 
 sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT
+
+echo -e "* Create server config file"
+
+touch ${OE_HOME_EXT}/${OE_CONFIG}.conf
+echo -e "* Creating server config file"
+sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
+sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
+sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
+sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
+sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
+

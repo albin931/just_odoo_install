@@ -42,14 +42,14 @@ echo -e "\n---- Update Server ----"
 sudo add-apt-repository universe
 # libpng12-0 dependency for wkhtmltopdf
 sudo add-apt-repository "deb http://mirrors.kernel.org/ubuntu/ xenial main"
-sudo apt-get update
-sudo apt-get upgrade -y
+sudo apt update
+sudo apt upgrade -y
 
 #--------------------------------------------------
 # Install PostgreSQL Server
 #--------------------------------------------------
 echo -e "\n---- Install PostgreSQL Server ----"
-sudo apt-get install postgresql postgresql-server-dev-all -y
+sudo apt install postgresql postgresql-server-dev-all -y
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
@@ -58,17 +58,14 @@ sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
 # Install Dependencies
 #--------------------------------------------------
 echo -e "\n--- Installing Python 3 + pip3 --"
-sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng12-0 gdebi -y
+sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng12-0 gdebi -y
 
 sudo apt install python3-lxml
 sudo apt install python3-psycopg2
 sudo apt install python3-pillow
 
-echo -e "\n---- Install python packages/requirements ----"
-sudo pip3 install -r requirements.txt
-
 echo -e "\n---- Installing nodeJS NPM and rtlcss for LTR support ----"
-sudo apt-get install nodejs npm -y
+sudo apt install nodejs npm -y
 sudo npm install -g rtlcss
 
 #--------------------------------------------------
@@ -91,7 +88,7 @@ else
 fi
 
 echo -e "\n---- Create ODOO system user ----"
-sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
+sudo adduser --system --quiet --shell=/bin/bash --home=$(pwd)/$OE_HOME --gecos 'ODOO' --group $OE_USER
 #The user should also be added to the sudo'ers group.
 sudo adduser $OE_USER sudo
 
@@ -103,7 +100,9 @@ sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 # Install ODOO
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Server ===="
-sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 
 echo -e "\n---- Create projects module directory ----"
-sudo su $OE_USER -c "mkdir $OE_HOME/projects"
+mkdir $OE_HOME/projects
+
+sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT

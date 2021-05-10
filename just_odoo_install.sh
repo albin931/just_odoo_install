@@ -14,8 +14,8 @@
 # ./just_odoo_install
 ################################################################################
 OE_USER="odoo11"
-OE_HOME="Odoo/$OE_USER"
-OE_HOME_EXT="Odoo/$OE_USER/${OE_USER}-server"
+OE_HOME="odoo/$OE_USER"
+OE_HOME_EXT="odoo/$OE_USER/${OE_USER}-server"
 # The default port where this Odoo instance will run under (provided you use the command -c in the terminal)
 # Set to true if you want to install it, false if you don't need it or have it already installed.
 INSTALL_WKHTMLTOPDF="True"
@@ -107,20 +107,9 @@ echo -e "\n==== Installing ODOO Server ===="
 git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 
 echo -e "\n---- Install python packages/requirements ----"
-sudo pip3 install -r $OE_HOME_EXT/requirements.txt
+cat $OE_HOME_EXT/requirements.txt | xargs -n 1 sudo pip3 install
 
 echo -e "\n---- Create projects module directory ----"
 mkdir $OE_HOME/projects
 
 sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT
-
-echo -e "* Create server config file"
-
-touch ${OE_HOME_EXT}/${OE_CONFIG}.conf
-echo -e "* Creating server config file"
-sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
-sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
-sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
-sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
-sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons\n' >> ${OE_HOME_EXT}/${OE_CONFIG}.conf"
-

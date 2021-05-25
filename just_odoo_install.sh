@@ -13,17 +13,19 @@
 # Execute the script to install Odoo:
 # ./just_odoo_install
 ################################################################################
-OE_USER="odoo11"
-OE_HOME="odoo/$OE_USER"
-OE_HOME_EXT="odoo/$OE_USER/${OE_USER}-server"
+OE_USER="odoo14"
+# Set the default Odoo port (you still have to use -c $OE_HOME/odoo-server.conf for example to use this.)
+OE_PORT="1469"
+# Choose the Odoo version which you want to install. For example: 13.0, 12.0, 11.0 or saas-18. When using 'master' the master version will be installed.
+# IMPORTANT! This script contains extra libraries that are specifically needed for Odoo 13.0
+OE_VERSION="14.0"
+
+CURRENT_USER="$USER"
+OE_HOME="/home/$CURRENT_USER/odoo/$OE_USER"
+OE_HOME_EXT="/home/$CURRENT_USER/odoo/$OE_USER/${OE_USER}-server"
 # The default port where this Odoo instance will run under (provided you use the command -c in the terminal)
 # Set to true if you want to install it, false if you don't need it or have it already installed.
 INSTALL_WKHTMLTOPDF="True"
-# Set the default Odoo port (you still have to use -c /etc/odoo-server.conf for example to use this.)
-OE_PORT="1169"
-# Choose the Odoo version which you want to install. For example: 13.0, 12.0, 11.0 or saas-18. When using 'master' the master version will be installed.
-# IMPORTANT! This script contains extra libraries that are specifically needed for Odoo 13.0
-OE_VERSION="11.0"
 # set the superadmin password
 OE_SUPERADMIN="admin"
 OE_CONFIG="${OE_USER}-server"
@@ -39,6 +41,7 @@ WKHTMLTOX_X32=https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.
 #--------------------------------------------------
 # Update Server
 #--------------------------------------------------
+
 echo -e "\n---- Update Server ----"
 # universe package is for Ubuntu 18.x
 sudo add-apt-repository universe
@@ -54,7 +57,7 @@ echo -e "\n---- Install PostgreSQL Server ----"
 sudo apt install postgresql postgresql-server-dev-all -y
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
-sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
+sudo su - postgres -c "createuser -s $CURRENT_USER" 2> /dev/null || true
 
 #--------------------------------------------------
 # Install Dependencies
@@ -90,15 +93,15 @@ else
 fi
 
 echo -e "\n---- Create ODOO system user ----"
-sudo adduser --system --quiet --shell=/bin/bash --home=$(pwd)/$OE_HOME --gecos 'ODOO' --group $OE_USER
-#The user should also be added to the sudo'ers group.
-sudo adduser $OE_USER sudo
+sudo adduser --system --quiet --shell=/bin/bash --home=$(pwd)/$OE_HOME --gecos 'ODOO' --group $CURRENT_USER
+# #The user should also be added to the sudo'ers group.
+# sudo adduser $CURRENT_USER sudo
 
-sudo chown -R $USER:$USER $OE_HOME
+sudo chown -R $CURRENT_USER:$CURRENT_USER $OE_HOME
 
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
-sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
+sudo chown $CURRENT_USER:$CURRENT_USER /var/log/$OE_USER
 
 #--------------------------------------------------
 # Install ODOO
@@ -107,9 +110,21 @@ echo -e "\n==== Installing ODOO Server ===="
 git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
 
 echo -e "\n---- Install python packages/requirements ----"
-cat $OE_HOME_EXT/requirements.txt | xargs -n 1 sudo pip3 install
+sudo pip3 install -r $OE_HOME_EXT/requirements.txt
 
 echo -e "\n---- Create projects module directory ----"
 mkdir $OE_HOME/projects
 
-sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT
+sudo chown -R $CURRENT_USER:$CURRENT_USER $OE_HOME_EXT
+
+echo -e "* Create server config file"
+
+sudo touch $OE_HOME/${OE_CONFIG}.conf
+echo -e "* Creating server config file"
+sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> $OE_HOME/${OE_CONFIG}.conf"
+sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> $OE_HOME/${OE_CONFIG}.conf"
+sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> $OE_HOME/${OE_CONFIG}.conf"
+sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> $OE_HOME/${OE_CONFIG}.conf"
+sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons\n' >> $OE_HOME/${OE_CONFIG}.conf"
+sudo chown $CURRENT_USER:$CURRENT_USER $OE_HOME/${OE_CONFIG}.conf
+sudo chmod 640 $OE_HOME/${OE_CONFIG}.conf
